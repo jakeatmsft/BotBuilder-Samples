@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.BotFramework;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
 using Microsoft.Extensions.Configuration;
@@ -27,9 +28,6 @@ namespace __PROJECT_NAME__
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
-
-            // Create the credential provider to be used with the Bot Framework Adapter.
-            services.AddSingleton<ICredentialProvider, ConfigurationCredentialProvider>();
 
             // Create the Bot Framework Adapter.
             services.AddSingleton<IBotFrameworkHttpAdapter, BotFrameworkHttpAdapter>();
@@ -52,7 +50,7 @@ namespace __PROJECT_NAME__
 
             app.UseDefaultFiles();
             app.UseStaticFiles();
-
+            app.UseWebSockets();
             //app.UseHttpsRedirection();
             app.UseMvc();
         }

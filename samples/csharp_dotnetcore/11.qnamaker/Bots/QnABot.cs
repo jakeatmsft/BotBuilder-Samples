@@ -32,7 +32,7 @@ namespace Microsoft.BotBuilderSamples
             var qnaMaker = new QnAMaker(new QnAMakerEndpoint
             {
                 KnowledgeBaseId = _configuration["QnAKnowledgebaseId"],
-                EndpointKey = _configuration["QnAAuthKey"],
+                EndpointKey = _configuration["QnAEndpointKey"],
                 Host = _configuration["QnAEndpointHostName"]
             },
             null,
@@ -40,8 +40,10 @@ namespace Microsoft.BotBuilderSamples
 
             _logger.LogInformation("Calling QnA Maker");
 
+            var options = new QnAMakerOptions { Top = 1 };
+
             // The actual call to the QnA Maker service.
-            var response = await qnaMaker.GetAnswersAsync(turnContext);
+            var response = await qnaMaker.GetAnswersAsync(turnContext, options);
             if (response != null && response.Length > 0)
             {
                 await turnContext.SendActivityAsync(MessageFactory.Text(response[0].Answer), cancellationToken);

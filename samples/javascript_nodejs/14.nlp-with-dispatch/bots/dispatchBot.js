@@ -46,11 +46,10 @@ class DispatchBot extends ActivityHandler {
 
         const qnaMaker = new QnAMaker({
             knowledgeBaseId: process.env.QnAKnowledgebaseId,
-            endpointKey: process.env.QnAAuthKey,
+            endpointKey: process.env.QnAEndpointKey,
             host: process.env.QnAEndpointHostName
         });
 
-        this.logger = logger;
         this.dispatchRecognizer = dispatchRecognizer;
         this.qnaMaker = qnaMaker;
 
@@ -89,7 +88,7 @@ class DispatchBot extends ActivityHandler {
             const welcomeText = 'Type a greeting or a question about the weather to get started.';
             const membersAdded = context.activity.membersAdded;
 
-            for (let member of membersAdded) {
+            for (const member of membersAdded) {
                 if (member.id !== context.activity.recipient.id) {
                     await context.sendActivity(`Welcome to Dispatch bot ${ member.name }. ${ welcomeText }`);
                 }
@@ -112,14 +111,14 @@ class DispatchBot extends ActivityHandler {
             await this.processSampleQnA(context);
             break;
         default:
-            this.logger.log(`Dispatch unrecognized intent: ${ intent }.`);
+            console.log(`Dispatch unrecognized intent: ${ intent }.`);
             await context.sendActivity(`Dispatch unrecognized intent: ${ intent }.`);
             break;
         }
     }
 
     async processHomeAutomation(context, luisResult) {
-        this.logger.log('processHomeAutomation');
+        console.log('processHomeAutomation');
 
         // Retrieve LUIS result for Process Automation.
         const result = luisResult.connectedServiceResult;
@@ -134,7 +133,7 @@ class DispatchBot extends ActivityHandler {
     }
 
     async processWeather(context, luisResult) {
-        this.logger.log('processWeather');
+        console.log('processWeather');
 
         // Retrieve LUIS results for Weather.
         const result = luisResult.connectedServiceResult;
@@ -149,7 +148,7 @@ class DispatchBot extends ActivityHandler {
     }
 
     async processSampleQnA(context) {
-        this.logger.log('processSampleQnA');
+        console.log('processSampleQnA');
 
         const results = await this.qnaMaker.getAnswers(context);
 

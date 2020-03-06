@@ -20,9 +20,8 @@ class MultilingualBot extends ActivityHandler {
      * Creates a Multilingual bot.
      * @param {Object} userState User state object.
      * @param {Object} languagePreferenceProperty Accessor for language preference property in the user state.
-     * @param {any} logger object for logging events, defaults to console if none is provided
      */
-    constructor(userState, languagePreferenceProperty, logger) {
+    constructor(userState, languagePreferenceProperty) {
         super();
         if (!userState) {
             throw new Error('[MultilingualBot]: Missing parameter. userState is required');
@@ -30,14 +29,9 @@ class MultilingualBot extends ActivityHandler {
         if (!languagePreferenceProperty) {
             throw new Error('[MultilingualBot]: Missing parameter. languagePreferenceProperty is required');
         }
-        if (!logger) {
-            logger = console;
-            logger.log('[MultilingualBot]: logger not passed in, defaulting to console');
-        }
 
         this.userState = userState;
         this.languagePreferenceProperty = languagePreferenceProperty;
-        this.logger = logger;
 
         this.onMembersAdded(async (context, next) => {
             const membersAdded = context.activity.membersAdded;
@@ -45,7 +39,7 @@ class MultilingualBot extends ActivityHandler {
                 if (membersAdded[cnt].id !== context.activity.recipient.id) {
                     const welcomeCard = CardFactory.adaptiveCard(WelcomeCard);
                     await context.sendActivity({ attachments: [welcomeCard] });
-                    await context.sendActivity(`This bot will introduce you to translation middleware. Say 'hi' to get started.`);
+                    await context.sendActivity('This bot will introduce you to translation middleware. Say \'hi\' to get started.');
                 }
             }
 
@@ -54,7 +48,6 @@ class MultilingualBot extends ActivityHandler {
         });
 
         this.onMessage(async (context, next) => {
-            this.logger.log('Running dialog with Message Activity.');
 
             await context.sendActivity(context.activity.text);
             if (isLanguageChangeRequested(context.activity.text)) {
@@ -89,13 +82,23 @@ class MultilingualBot extends ActivityHandler {
                         value: englishEnglish
                     }
                 ];
-                const reply = MessageFactory.suggestedActions(cardActions, `Choose your language:`);
+                const reply = MessageFactory.suggestedActions(cardActions, 'Choose your language:');
                 await context.sendActivity(reply);
             }
 
             // By calling next() you ensure that the next BotHandler is run.
             await next();
         });
+    }
+
+    /**
+     * Override the ActivityHandler.run() method to save state changes after the bot logic completes.
+     */
+    async run(context) {
+        await super.run(context);
+
+        // Save state changes
+        await this.userState.saveChanges(context);
     }
 }
 

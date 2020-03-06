@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.BotFramework;
 using Microsoft.Bot.Builder.Dialogs.Declarative.Resources;
 using Microsoft.Bot.Builder.Dialogs.Declarative.Types;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
@@ -25,9 +26,9 @@ namespace Microsoft.BotBuilderSamples
             TypeFactory.Configuration = Configuration;
         }
 
-        IConfiguration Configuration { get; set; }
+        private IConfiguration Configuration { get; set; }
 
-        IHostingEnvironment HostingEnvironment { get; set; }
+        private IHostingEnvironment HostingEnvironment { get; set; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -54,6 +55,9 @@ namespace Microsoft.BotBuilderSamples
 
             // Create the bot  In this case the ASP Controller is expecting an IBot.
             services.AddSingleton<IBot, AdaptiveBot>();
+
+            // Add this so settings memory scope is populated correctly.
+            services.AddSingleton<IConfiguration>(this.Configuration);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -70,8 +74,6 @@ namespace Microsoft.BotBuilderSamples
 
             app.UseDefaultFiles();
             app.UseStaticFiles();
-
-            //app.UseHttpsRedirection();
             app.UseMvc();
         }
     }
