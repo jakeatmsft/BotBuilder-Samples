@@ -9,6 +9,9 @@ using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 
+using Microsoft.Bot.Builder.BotFramework;
+using Microsoft.BotBuilderSamples.Translation;
+
 namespace Microsoft.BotBuilderSamples
 {
     public class Startup
@@ -26,6 +29,18 @@ namespace Microsoft.BotBuilderSamples
 
             // Create the bot services (LUIS, QnA) as a singleton.
             services.AddSingleton<IBotServices, BotServices>();
+
+            // Create the storage we'll be using for User and Conversation state. (Memory is great for testing purposes.)
+            services.AddSingleton<IStorage, MemoryStorage>();
+
+            // Create the User state. (Used to store the user's language preference.)
+            services.AddSingleton<UserState>();
+
+            // Create the Microsoft Translator responsible for making calls to the Cognitive Services translation service
+            services.AddSingleton<MicrosoftTranslator>();
+
+            // Create the Translation Middleware that will be added to the middleware pipeline in the AdapterWithErrorHandler
+            services.AddSingleton<TranslationMiddleware>();
 
             // Create the bot as a transient.
             services.AddTransient<IBot, DispatchBot>();

@@ -56,6 +56,7 @@ class MultilingualBot extends ActivityHandler {
         this.onMessage(async (context, next) => {
             this.logger.log('Running dialog with Message Activity.');
 
+            await context.sendActivity(context.activity.text);
             if (isLanguageChangeRequested(context.activity.text)) {
                 const currentLang = context.activity.text.toLowerCase();
                 const lang = currentLang === englishEnglish || currentLang === spanishEnglish ? englishEnglish : englishSpanish;
@@ -69,6 +70,7 @@ class MultilingualBot extends ActivityHandler {
                 // selected language.
                 // If Spanish was selected by the user, the reply below will actually be shown in spanish to the user.
                 await context.sendActivity(`Your current language code is: ${ lang }`);
+                
                 await this.userState.saveChanges(context);
             } else {
                 // Show the user the possible options for language. The translation middleware

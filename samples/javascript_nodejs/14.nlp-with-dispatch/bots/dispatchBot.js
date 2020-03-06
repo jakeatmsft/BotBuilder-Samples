@@ -1,19 +1,39 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-const { ActivityHandler } = require('botbuilder');
+const { ActivityHandler, ActionTypes, CardFactory, MessageFactory } = require('botbuilder');
+const { TranslationSettings } = require('../translation/translationSettings');
+
+const englishEnglish = TranslationSettings.englishEnglish;
+const englishSpanish = TranslationSettings.englishSpanish;
+const spanishEnglish = TranslationSettings.spanishEnglish;
+const spanishSpanish = TranslationSettings.spanishSpanish;
+
 const { LuisRecognizer, QnAMaker } = require('botbuilder-ai');
 
 class DispatchBot extends ActivityHandler {
     /**
+     * Creates a Multilingual bot.
+     * @param {Object} userState User state object.
+     * @param {Object} languagePreferenceProperty Accessor for language preference property in the user state.
      * @param {any} logger object for logging events, defaults to console if none is provided
      */
-    constructor(logger) {
+    constructor(userState, languagePreferenceProperty, logger) {
         super();
+        if (!userState) {
+            throw new Error('[MultilingualBot]: Missing parameter. userState is required');
+        }
+        if (!languagePreferenceProperty) {
+            throw new Error('[MultilingualBot]: Missing parameter. languagePreferenceProperty is required');
+        }
         if (!logger) {
             logger = console;
-            logger.log('[DispatchBot]: logger not passed in, defaulting to console');
+            logger.log('[MultilingualBot]: logger not passed in, defaulting to console');
         }
+
+        this.userState = userState;
+        this.languagePreferenceProperty = languagePreferenceProperty;
+        this.logger = logger;
 
         const dispatchRecognizer = new LuisRecognizer({
             applicationId: process.env.LuisAppId,
@@ -36,17 +56,33 @@ class DispatchBot extends ActivityHandler {
 
         this.onMessage(async (context, next) => {
             this.logger.log('Processing Message Activity.');
+            
+            if (isLanguageChangeRequested(context.activity.text)) {
+                const currentLang = context.activity.text.toLowerCase();
+                const lang = currentLang === englishEnglish || currentLang === spanishEnglish ? englishEnglish : englishSpanish;
 
-            // First, we use the dispatch model to determine which cognitive service (LUIS or QnA) to use.
-            const recognizerResult = await dispatchRecognizer.recognize(context);
+                // Get the user language preference from the user state.
+                await this.languagePreferenceProperty.set(context, lang);
 
-            // Top intent tell us which cognitive service to use.
-            const intent = LuisRecognizer.topIntent(recognizerResult);
+                // If the user requested a language change through the suggested actions with values "es" or "en",
+                // simply change the user's language preference in the user state.
+                // The translation middleware will catch this setting and translate both ways to the user's
+                // selected language.
+                // If Spanish was selected by the user, the reply below will actually be shown in spanish to the user.
+                await context.sendActivity(`Your current language code is: ${ lang }`);
+                
+                await this.userState.saveChanges(context);
+            } else {
+                // First, we use the dispatch model to determine which cognitive service (LUIS or QnA) to use.
+                const recognizerResult = await dispatchRecognizer.recognize(context);
 
-            // Next, we call the dispatcher with the top intent.
-            await this.dispatchToTopIntentAsync(context, intent, recognizerResult);
+                // Top intent tell us which cognitive service to use.
+                const intent = LuisRecognizer.topIntent(recognizerResult);
 
-            await next();
+                // Next, we call the dispatcher with the top intent.
+                await this.dispatchToTopIntentAsync(context, intent, recognizerResult);
+                await next();
+            }
         });
 
         this.onMembersAdded(async (context, next) => {
@@ -125,4 +161,25 @@ class DispatchBot extends ActivityHandler {
     }
 }
 
+/**
+ * Checks whether the utterance from the user is requesting a language change.
+ * In a production bot, we would use the Microsoft Text Translation API language
+ * detection feature, along with detecting language names.
+ * For the purpose of the sample, we just assume that the user requests language
+ * changes by responding with the language code through the suggested action presented
+ * above or by typing it.
+ * @param {string} utterance the current turn utterance.
+ */
+function isLanguageChangeRequested(utterance) {
+    // If the utterance is empty or the utterance is not a supported language code,
+    // then there is no language change requested
+    if (!utterance) {
+        return false;
+    }
+
+    // We know that the utterance is a language code. If the code sent in the utterance
+    // is different from the current language, then a change was indeed requested
+    utterance = utterance.toLowerCase().trim();
+    return utterance === englishSpanish || utterance === englishEnglish || utterance === spanishSpanish || utterance === spanishEnglish;
+}
 module.exports.DispatchBot = DispatchBot;
